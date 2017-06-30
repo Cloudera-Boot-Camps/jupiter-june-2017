@@ -131,6 +131,58 @@ if __name__ == "__main__":
 
 Note that in HBase, row key is the measurementID and value is comma separated data received from Kafka.
 
+# Build a “generator -> Flume -> Kafka -> Spark Streaming -> Kudu” pipeline 
+
+Create a Impala table backed by Kudu storage
+
+```
+CREATE EXTERNAL TABLE my_first_table(measurementID STRING, `detectorID` INT,
+`galaxyID` INT,
+`astrophysicistID` INT,
+`measurementTime` STRING,
+`amplitude1` STRING,
+`amplitude2` STRING,
+`amplitude3` STRING
+) PARTITION BY HASH PARTITIONS 16
+STORED AS KUDU TBLPROPERTIES('kudu.master_addresses' = 'ip-172-31-43-82.us-west-2.compute.internal')
+```
+
+At time of writing we are still working on getting ingest working to Kudu.
+We are using Kudu Python API. However, we are having trouble install the Python API
+using pip.
+
+Initial version of spark streaming script that writes to Kudu:
+
+```
+from pyspark import SparkContext
+from pyspark.streaming.kafka import KafkaUtils
+from pyspark.streaming import StreamingContext
+import kudu
+from kudu.client import Partitioning
+from datetime import datetime
+
+master = 'ip-172-31-43-82.us-west-2.compute.internal'
+table = 'my_first_table'
+client = kudu.connect(host=master, port=7051)
+table = client.table(table)
+session = client.new_session()
+
+def toKudu(time, rdd):
+   rdd.map(lambda x : x[1].split(',')).map(lambda x : table.insert({"measurementID":x[0], "detectorID":x[1], "galaxyID":x[2], "astrophysicistID":x[3], "measurementTime":x[4], "amplitude1":x[5], "amplitude2":x[6], "amplitude3":x[7]}))
+
+if __name__ == "__main__":
+   sc = SparkContext()
+   ssc = StreamingContext(sc, 10)
+   mystream = KafkaUtils.createStream(ssc, 'ip-172-31-43-82.us-west-2.compute.internal:2181', "spark-streaming-consumer", {'default-flume-topic': 1})
+   mystream.count().map(lambda x :'Records in this batch: %s' % x).pprint()
+
+   mystream.foreachRDD(toKudu)
+
+   ssc.start()
+   ssc.awaitTermination()
+   ssc.stop()
+```
+
 
 # Debugging
 
@@ -140,4 +192,6 @@ To confirm data is getting into Kafka, we used command line tools like:
 kafka-topics --zookeeper ip-172-31-43-82.us-west-2.compute.internal:2181 --list
 
 kafka-console-consumer --zookeeper  ip-172-31-43-82.us-west-2.compute.internal:2181  --topic default-flume-topic  --from-beginning
+
+kafka-console-consumer --zookeeper  ip-172-31-43-82.us-west-2.compute.internal:2181  --topic default-flume-topic
 ```
