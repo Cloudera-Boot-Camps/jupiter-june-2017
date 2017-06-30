@@ -195,6 +195,12 @@ kafka-console-consumer --zookeeper  ip-172-31-43-82.us-west-2.compute.internal:2
 
 kafka-console-consumer --zookeeper  ip-172-31-43-82.us-west-2.compute.internal:2181  --topic default-flume-topic
 
+# inserts an event into topic
+echo "measurement,1,0.995,0.005,0.995" | kafka-console-producer --broker-list ip-172-31-32-132.us-west-2.compute.internal:9092 --topic default-flume-topic 
+
+# deletes all data in topic
+kafka-configs --zookeeper ip-172-31-43-82.us-west-2.compute.internal:2181  --alter --entity-type topics --entity-name default-flume-topic --add-config retention.ms=1000
+
 ```
 
 # Envelope 
@@ -244,4 +250,9 @@ steps {
         }
     }
 }
+```
+
+Should be run as a regular spark-streaming app:
+```
+spark-submit target/envelope-0.3.0.jar dima2.conf
 ```
