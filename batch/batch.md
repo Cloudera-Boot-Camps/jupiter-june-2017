@@ -146,9 +146,28 @@ In order to import each of four tables from Oracle with sqoop we've created a wo
 </workflow-app>
 
 ```
-Hive queries used to change datatypes:
+###Hive queries used to change datatypes:
 
+Fact table:
 ```
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.max.dynamic.partitions.pernode=200;
+set hive.exec.max.dynamic.partitions=200;
+set mapreduce.map.java.opts=-Xmx1500m;
+set mapreduce.map.memory.mb=2048;
+set hive.exec.compress.output=true;
+set mapred.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+set mapred.output.compression.type=BLOCK;
+use dfadeyev;
+create table measurements_partitioned(measurement_id string, detector_id int, astrophysicist_id int, measurement_time int, amplitude_1 decimal(24,20), amplitude_2 decimal(24,20), amplitude_3 decimal(24,20)) PARTITIONED BY (galaxy_id int) STORED AS PARQUET TBLPROPERTIES ('PARQUET.COMPRESS'='SNAPPY');
+INSERT OVERWRITE TABLE measurements_partitioned PARTITION(galaxy_id) select measurement_id, cast(detector_id as int), cast(astrophysicist_id as int), cast(measurement_time as int), cast(amplitude_1 as decimal(24,20)), cast(amplitude_2 as decimal(24,20)), cast(amplitude_3 as decimal(24,20)), cast(galaxy_id as int) FROM measurements;
+```
+
+Dimensional tables:
+```
+create table astrophysicists_prod stored as parquet TBLPROPERTIES ('PARQUET.COMPRESS'='SNAPPY') as select cast(astrophysicist_id as int), astrophysicist_name, cast(year_of_birth as int), nationality from astrophysicists;
+create table detectors_prod stored as parquet TBLPROPERTIES ('PARQUET.COMPRESS'='SNAPPY') as select cast(detector_id as int), detector_name, country, cast(latitude as double), cast(longitude as double) from detectors;
+create table galaxies_prod stored as parquet TBLPROPERTIES ('PARQUET.COMPRESS'='SNAPPY') as select cast(galaxy_id as int), galaxy_name, galaxy_type, cast(distance_ly as double), cast(absolute_magnitude as double), cast(apparent_magnitude as double), galaxy_group from galaxies;
 
 ```
 Hive query used to apply all transformations:
