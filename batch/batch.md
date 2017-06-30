@@ -146,7 +146,7 @@ In order to import each of four tables from Oracle with sqoop we've created a wo
 </workflow-app>
 
 ```
-###Hive queries used to change datatypes:
+### Hive queries used to change datatypes:
 
 Fact table:
 ```
