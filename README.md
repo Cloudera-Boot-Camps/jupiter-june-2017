@@ -18,8 +18,8 @@ Jupiter
 |Worker|ec2-52-39-159-217.us-west-2.compute.amazonaws.com|ip-172-31-32-132.us-west-2.compute.internal|
 
 ## LAB NOTES
-[ingest](./ingest/ingest.md)
+[INGESTION AND QUERYING](./ingest/ingest.md)
 
-[batch](./batch/batch.md)
+[BATCH PROCESSING](./batch/batch.md)
 
-[streaming](./streaming.md)
+[STREAM PROCESSING](./streaming.md)
