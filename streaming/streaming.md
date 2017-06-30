@@ -194,4 +194,54 @@ kafka-topics --zookeeper ip-172-31-43-82.us-west-2.compute.internal:2181 --list
 kafka-console-consumer --zookeeper  ip-172-31-43-82.us-west-2.compute.internal:2181  --topic default-flume-topic  --from-beginning
 
 kafka-console-consumer --zookeeper  ip-172-31-43-82.us-west-2.compute.internal:2181  --topic default-flume-topic
+
+```
+
+# Envelope 
+
+```
+application {
+    name = Gravity
+    batch.milliseconds = 5000
+    executors = 1
+    executor.cores = 1
+    executor.memory = 1G
+}
+
+steps {
+    kaffka {
+        input {
+            type = kafka
+            brokers = "ip-172-31-32-132.us-west-2.compute.internal:9092"
+            topics = default-flume-topic
+            encoding = string
+            translator {
+                type = delimited
+                delimiter = ","
+                field.names = [measurement_id, detector_id,galaxy_id,astrophysicist_id, measurement_time, amplitude_1, amplitude_2, amplitude_3]
+                field.types = [string, int,int,int,long,double,double,double]
+            }
+            window {
+                enabled = true
+                milliseconds = 15000
+            }
+        }
+    }
+
+    koodoo {
+        dependencies = [kaffka]
+        deriver {
+            type = sql
+            query.literal = """ SELECT * FROM kaffka """
+        }
+        planner {
+            type = upsert
+        }
+        output {
+            type = kudu
+            connection = "ip-172-31-43-82.us-west-2.compute.internal:7051"
+            table.name = "impala::default.gravity_raw"
+        }
+    }
+}
 ```
