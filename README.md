@@ -22,4 +22,4 @@ Jupiter
 
 [BATCH PROCESSING](./batch/batch.md)
 
-[STREAM PROCESSING](./streaming.md)
+[STREAM PROCESSING](./streaming/streaming.md)
